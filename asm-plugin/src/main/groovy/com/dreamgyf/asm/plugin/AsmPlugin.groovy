@@ -30,11 +30,14 @@ class AsmPlugin extends Transform implements Plugin<Project> {
 
     private int api = Opcodes.ASM7
 
+    private AsmConfigModel mConfig
+
     @Override
     void apply(Project project) {
         println 'apply AsmPlugin'
         def android = project.extensions.getByType(AppExtension.class)
         android.registerTransform(this)
+        mConfig = project.extensions.create("asmConfig", AsmConfigModel.class)
     }
 
     @Override
@@ -82,13 +85,8 @@ class AsmPlugin extends Transform implements Plugin<Project> {
                 if (fileName.endsWith(".class") && !fileName.startsWith("R\$")
                         && "R.class" != fileName && "BuildConfig.class" != fileName) {
                     ClassReader classReader = new ClassReader(subFile.bytes)
-                    ClassWriter classWriter = new ClassWriter(classReader, ClassWriter.COMPUTE_MAXS) {
-                        @Override
-                        protected ClassLoader getClassLoader() {
-                            return ClassLoader.getSystemClassLoader()
-                        }
-                    }
-                    ClassVisitor cv = new AsmClassVisitor(api, classWriter)
+                    ClassWriter classWriter = new ClassWriter(classReader, ClassWriter.COMPUTE_MAXS)
+                    ClassVisitor cv = new AsmClassVisitor(api, classWriter, mConfig)
                     classReader.accept(cv, ClassReader.EXPAND_FRAMES)
                     FileOutputStream fos = new FileOutputStream(
                             subFile.parentFile.absolutePath + File.separator + fileName)
@@ -125,15 +123,15 @@ class AsmPlugin extends Transform implements Plugin<Project> {
                 jarOs.putNextEntry(zipEntry)
                 InputStream jarIs = jarFile.getInputStream(jarEntry)
 
-//                if (classFileName.endsWith(".class") && !classFileName.endsWith("BuildConfig.class")) {
-//                    ClassReader classReader = new ClassReader(IOUtils.toByteArray(jarIs))
-//                    ClassWriter classWriter = new ClassWriter(classReader, ClassWriter.COMPUTE_MAXS)
-//                    ClassVisitor cv = new AsmClassVisitor(api, classWriter)
-//                    classReader.accept(cv, ClassReader.EXPAND_FRAMES)
-//                    jarOs.write(classWriter.toByteArray())
-//                } else {
+                if (classFileName.endsWith(".class") && !classFileName.endsWith("BuildConfig.class")) {
+                    ClassReader classReader = new ClassReader(IOUtils.toByteArray(jarIs))
+                    ClassWriter classWriter = new ClassWriter(classReader, ClassWriter.COMPUTE_MAXS)
+                    ClassVisitor cv = new AsmClassVisitor(api, classWriter, mConfig)
+                    classReader.accept(cv, ClassReader.EXPAND_FRAMES)
+                    jarOs.write(classWriter.toByteArray())
+                } else {
                     jarOs.write(IOUtils.toByteArray(jarIs))
-//                }
+                }
                 jarOs.closeEntry()
             }
             jarOs.close()
