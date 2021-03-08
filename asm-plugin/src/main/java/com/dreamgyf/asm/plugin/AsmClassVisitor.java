@@ -79,14 +79,24 @@ class AsmClassVisitor extends ClassVisitor {
 			}
 
 			MethodVisitor mv = cv.visitMethod(access, name, descriptor, signature, exceptions);
-			if ("onCreate".equals(name) && "(Landroid/os/Bundle;)V".equals(descriptor)) {
-				printStubMethod(name);
+			if (isMethodNeedStub(name, descriptor)) {
+				printStubMethod(name, descriptor);
 				mNeedStubMethod = true;
-				return new AsmCalculatingTimeMethodVisitor(api, mv, mClassName);
+				return new AsmCalculatingTimeMethodVisitor(api, mv, mClassName, name, descriptor);
 			}
 			return mv;
 		}
 		return super.visitMethod(access, name, descriptor, signature, exceptions);
+	}
+
+	private boolean isMethodNeedStub(String name, String descriptor) {
+		return ("onCreate".equals(name) && "(Landroid/os/Bundle;)V".equals(descriptor)) ||
+				"onStart".equals(name) ||
+				"onResume".equals(name) ||
+				"onPause".equals(name) ||
+				"onStop".equals(name) ||
+				"onRestart".equals(name) ||
+				"onDestroy".equals(name);
 	}
 
 	@Override
@@ -97,8 +107,8 @@ class AsmClassVisitor extends ClassVisitor {
 		super.visitEnd();
 	}
 
-	private void printStubMethod(String methodName) {
-		System.out.println("AsmClassVisitor: Stub method " + mClassName + "." + methodName);
+	private void printStubMethod(String methodName, String descriptor) {
+		System.out.println("AsmClassVisitor: Stub method " + mClassName + "." + methodName + ":" + descriptor);
 	}
 
 }

@@ -10,12 +10,18 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 
 	private String mFormatClassName;
 
+	private String mMethodName;
+
+	private String mMethodDescriptor;
+
 	private final String TIMER_NAME = "_$_timeRecorder";
 
-	AsmCalculatingTimeMethodVisitor(int api, MethodVisitor mv, String className) {
+	AsmCalculatingTimeMethodVisitor(int api, MethodVisitor mv, String className, String methodName, String methodDescriptor) {
 		super(api, mv);
 		mClassName = className;
 		mFormatClassName = className.replaceAll("/", ".");
+		mMethodName = methodName;
+		mMethodDescriptor = methodDescriptor;
 	}
 
 	@Override
@@ -56,7 +62,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitVarInsn(Opcodes.ALOAD, 0);
 			mv.visitFieldInsn(Opcodes.GETFIELD, mClassName, TIMER_NAME, "J");
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(J)Ljava/lang/StringBuilder;", false);
-			mv.visitLdcInsn("ms, when " + mFormatClassName + ".onCreate()");
+			mv.visitLdcInsn("ms, when " + mFormatClassName + "." + mMethodName + ":" + mMethodDescriptor);
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
