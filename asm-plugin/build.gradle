@@ -1,0 +1,25 @@
+apply plugin: 'groovy'
+apply plugin: 'maven'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation gradleApi()
+    implementation localGroovy()
+    implementation 'com.android.tools.build:gradle:3.5.3'
+    implementation 'org.ow2.asm:asm:7.0'
+    implementation 'org.ow2.asm:asm-commons:7.0'
+}
+
+group='com.dreamgyf.plugin'
+version='0.0.1.0'
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: uri(System.getenv("BAY_LOCAL_MAVEN")))
+        }
+    }
+}
