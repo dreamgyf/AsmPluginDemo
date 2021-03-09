@@ -23,7 +23,7 @@ class AsmClassVisitor extends ClassVisitor {
 
 	private boolean mNeedStubMethod = false;
 
-	private String mPatternStartWith;
+	private Set<String> mStartWithPatterns;
 
 	private final Set<String> mExcludes = new HashSet<>();
 
@@ -33,8 +33,11 @@ class AsmClassVisitor extends ClassVisitor {
 	}
 
 	private void readConfig(AsmConfigModel config) throws IOException {
-		if (config.patternStartWith != null) {
-			mPatternStartWith = config.patternStartWith.replaceAll("\\.", "/");
+		if (config.startWithPatterns != null) {
+			mStartWithPatterns = new HashSet<>();
+			for (String pattern : config.startWithPatterns) {
+				mStartWithPatterns.add(pattern.replaceAll("\\.", "/"));
+			}
 		}
 
 		if (config.excludes != null) {
@@ -43,8 +46,8 @@ class AsmClassVisitor extends ClassVisitor {
 			}
 		}
 
-		if (config.excludeBy != null) {
-			File excludeFile = config.excludeBy;
+		if (config.excludesByFile != null) {
+			File excludeFile = config.excludesByFile;
 			if (!excludeFile.exists()) {
 				throw new FileNotFoundException("The exclude file could not be found");
 			}
@@ -66,9 +69,21 @@ class AsmClassVisitor extends ClassVisitor {
 		if (mExcludes.contains(mClassName)) {
 			mNeedStubClass = false;
 		} else {
-			mNeedStubClass = mClassName.contains("Activity") && (mPatternStartWith == null || mClassName.startsWith(mPatternStartWith));
+			mNeedStubClass = mClassName.contains("Activity") && isStartWithPatternContains(mClassName);
 		}
 		super.visit(version, access, name, signature, superName, interfaces);
+	}
+
+	private boolean isStartWithPatternContains(String className) {
+		if (mStartWithPatterns == null) {
+			return true;
+		}
+		for (String pattern : mStartWithPatterns) {
+			if (className.startsWith(pattern)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override
