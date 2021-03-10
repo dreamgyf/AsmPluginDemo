@@ -80,13 +80,22 @@ class AsmPlugin extends Transform implements Plugin<Project> {
         File file = input.file
 
         if (file.isDirectory()) {
+            //递归遍历该文件夹下面所有的子文件夹以及子文件
             file.eachFileRecurse { subFile ->
                 def fileName = subFile.name
+                //初步判断这个文件（或文件夹）是否可插桩
                 if (fileName.endsWith(".class") && !fileName.startsWith("R\$")
                         && "R.class" != fileName && "BuildConfig.class" != fileName) {
+                    //ClassReader: 字节码的读取与分析引擎
                     ClassReader classReader = new ClassReader(subFile.bytes)
+                    //ClassWriter: 它实现了ClassVisitor接口，用于拼接字节码
+                    //COMPUTE_MAXS: 自动计算栈的最大值以及本地变量的最大数量
+                    //COMPUTE_FRAMES: 包含COMPUTE_MAXS，且会自动计算方法的栈桢
                     ClassWriter classWriter = new ClassWriter(classReader, ClassWriter.COMPUTE_MAXS)
+                    //ClassVisitor: 定义在读取Class字节码时会触发的事件，如类头解析完成、注解解析、字段解析、方法解析等
                     ClassVisitor cv = new AsmClassVisitor(api, classWriter, mConfig)
+                    //使给定的ClassVisitor访问传递给此构造函数的jvm类文件结构
+                    //EXPAND_FRAMES: 展开栈帧的标志位
                     classReader.accept(cv, ClassReader.EXPAND_FRAMES)
                     FileOutputStream fos = new FileOutputStream(
                             subFile.parentFile.absolutePath + File.separator + fileName)
