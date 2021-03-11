@@ -26,14 +26,38 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 
 	@Override
 	public void visitCode() {
+
+		/*
+			假设此时栈为空
+		*/
+
 		//aload_0: 将this压入栈顶
 		mv.visitVarInsn(Opcodes.ALOAD, 0);
+
+		/*
+			此时栈内容(以左边为栈顶，右边为栈顶):
+			[this]
+		*/
+
 		//invokestatic: 调用静态方法System.currentTimeMillis()，返回值为基础类型long
 		//第二个参数代表类的全限定名，第三个参数代表方法名，第四个参数代表函数签名，()J的意思是不接受参数，返回值为J (J在字节码里代表基础类型long)
 		mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "currentTimeMillis", "()J", false);
+
+		/*
+			此时栈内容(以左边为栈顶，右边为栈顶):
+			[System.currentTimeMillis()的结果值, this]
+		*/
+
 		//lneg: 将栈顶的long类型取负并将结果压入栈顶
 		mv.visitInsn(Opcodes.LNEG);
+
+		/*
+			此时栈内容(以左边为栈顶，右边为栈顶):
+			[System.currentTimeMillis()的结果值取负, this]
+		*/
+
 		//putfield: 为该类的此实例变量赋值
+		//以(栈顶 - 1)为执行对象，为其赋值为栈顶值 (this._$_timeRecorder = -System.currentTimeMillis())
 		mv.visitFieldInsn(Opcodes.PUTFIELD, mClassName, TIMER_NAME, "J");
 		super.visitCode();
 	}
@@ -208,62 +232,278 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			   [StackTraceElement数组]
 			 */
 
+			//astore: 将一个引用类型对象保存到局部变量表index为2的位置（index1: this, index2: onCreate方法的参数）
 			//使用一个临时变量保存StackTraceElement数组
 			mv.visitVarInsn(Opcodes.ASTORE, 2);
+			//将局部变量表index2处的引用对象压入栈顶
 			mv.visitVarInsn(Opcodes.ALOAD, 2);
+
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [StackTraceElement数组]
+			   此时局部变量表中:
+			   [ 0        1             2           ]
+			   [this | Bundle | StackTraceElement数组]
+			 */
+
 			//StackTraceElement数组备份
 			mv.visitVarInsn(Opcodes.ASTORE, 3);
 			mv.visitVarInsn(Opcodes.ALOAD, 3);
+
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [StackTraceElement数组]
+			   此时局部变量表中:
+			   [ 0        1             2                       3           ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组]
+			 */
+
+			//获得栈顶位置数组的长度
 			mv.visitInsn(Opcodes.ARRAYLENGTH);
 
-			//将数组length压入栈顶
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [StackTraceElement数组长度]
+			   此时局部变量表中:
+			   [ 0        1             2                       3           ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组]
+			 */
+
+			//将数组length保存至局部变量表index4的位置
 			mv.visitVarInsn(Opcodes.ISTORE, 4);
+
+			/*
+			   此时栈为空
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4   ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度]
+			 */
+
 			//将int常量0压入栈顶
 			mv.visitInsn(Opcodes.ICONST_0);
-			//将栈顶的0取出保存（用来和length做比较）
+			//将栈顶的0取出保存（用作循环下标index）
 			mv.visitVarInsn(Opcodes.ISTORE, 5);
 
-			//循环打印栈信息
+			/*
+			   此时栈为空
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5    ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index]
+			 */
+
+			//循环开始处
+			//插入一个label用来做后续循环跳转的标志
 			Label labelLoop = new Label();
 			mv.visitLabel(labelLoop);
+			//将循环标志位的值压入栈顶
 			mv.visitVarInsn(Opcodes.ILOAD, 5);
+			//将数组长度值压入栈顶
 			mv.visitVarInsn(Opcodes.ILOAD, 4);
+
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [循环标志位, 数组长度]
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5    ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index]
+			 */
+
 			//if_icmpge: 比较栈顶两int型数值大小, 当结果大于等于0时跳转
 			mv.visitJumpInsn(Opcodes.IF_ICMPGE, labelEnd);
 
+			/*
+			   此时栈为空
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5    ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index]
+			 */
+
+			//将StackTraceElement数组压入栈顶
 			mv.visitVarInsn(Opcodes.ALOAD, 3);
+			//将循环index的值压入栈顶
 			mv.visitVarInsn(Opcodes.ILOAD, 5);
-			//将引用类型数组指定索引的值推送至栈顶（var3[5]）
+
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [循环index, StackTraceElement数组]
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5    ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index]
+			 */
+
+			//将引用类型数组指定索引的值推送至栈顶（var3[var5]）
 			mv.visitInsn(Opcodes.AALOAD);
+
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [StackTraceElement数组中的某个值(以循环index作为下标)]
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5    ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index]
+			 */
+
 			//将该索引下的值保存
 			mv.visitVarInsn(Opcodes.ASTORE, 6);
 
+			/*
+			   此时栈为空
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5                             6                         ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index | StackTraceElement数组中的某个值(以循环index作为下标)]
+			 */
+
+			//将System.out入栈
 			mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
 
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [System.out]
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5                             6                         ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index | StackTraceElement数组中的某个值(以循环index作为下标)]
+			 */
+
+			//new StringBuilder()
 			mv.visitTypeInsn(Opcodes.NEW, "java/lang/StringBuilder");
 			mv.visitInsn(Opcodes.DUP);
 			mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
 
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [StringBuilder, System.out]
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5                             6                         ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index | StackTraceElement数组中的某个值(以循环index作为下标)]
+			 */
+
+			//取出StackTraceElement数组中的某个值(以循环index作为下标)
 			mv.visitVarInsn(Opcodes.ALOAD, 6);
+
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [StackTraceElement数组中的某个值(以循环index作为下标), StringBuilder, System.out]
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5                             6                         ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index | StackTraceElement数组中的某个值(以循环index作为下标)]
+			 */
+
+			//使用栈顶对象，执行getClassName方法，将返回值压入栈顶
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StackTraceElement", "getClassName", "()Ljava/lang/String;", false);
+
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [ClassName, StringBuilder, System.out]
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5                             6                         ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index | StackTraceElement数组中的某个值(以循环index作为下标)]
+			 */
+
+			//以ClassName作为参数，执行(栈顶 - 1)对象的append方法，将返回值压入栈顶
+			//即StringBuilder.append(ClassName)
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
+
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [StringBuilder, System.out]
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5                             6                         ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index | StackTraceElement数组中的某个值(以循环index作为下标)]
+			 */
+
+			//将常量入栈
 			mv.visitLdcInsn(".");
+			//以常量作为参数，执行(栈顶 - 1)对象的append方法，将返回值压入栈顶
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
+
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [StringBuilder, System.out]
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5                             6                         ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index | StackTraceElement数组中的某个值(以循环index作为下标)]
+			 */
+
+			//将StackTraceElement数组中的某个值(以循环index作为下标)入栈
 			mv.visitVarInsn(Opcodes.ALOAD, 6);
+			//调用它的getMethodName方法，将返回值压入栈顶
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StackTraceElement", "getMethodName", "()Ljava/lang/String;", false);
+
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [MethodName, StringBuilder, System.out]
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5                             6                         ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index | StackTraceElement数组中的某个值(以循环index作为下标)]
+			 */
+
+			//以MethodName作为参数，执行(栈顶 - 1)对象的append方法，将返回值压入栈顶
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
+
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [StringBuilder, System.out]
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5                             6                         ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index | StackTraceElement数组中的某个值(以循环index作为下标)]
+			 */
+
+			//将常量入栈
 			mv.visitLdcInsn(":");
+			//以常量作为参数，执行(栈顶 - 1)对象的append方法，将返回值压入栈顶
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
+
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [StringBuilder, System.out]
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5                             6                         ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index | StackTraceElement数组中的某个值(以循环index作为下标)]
+			 */
+
+			//将StackTraceElement数组中的某个值(以循环index作为下标)入栈
 			mv.visitVarInsn(Opcodes.ALOAD, 6);
+			//调用它的getLineNumber方法，将返回值压入栈顶
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StackTraceElement", "getLineNumber", "()I", false);
+
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [LineNumber, StringBuilder, System.out]
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5                             6                         ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index | StackTraceElement数组中的某个值(以循环index作为下标)]
+			 */
+
+			//以LineNumber作为参数，执行(栈顶 - 1)对象的append方法，将返回值压入栈顶
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(I)Ljava/lang/StringBuilder;", false);
+
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [StringBuilder, System.out]
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5                             6                         ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index | StackTraceElement数组中的某个值(以循环index作为下标)]
+			 */
+
+			//调用栈顶对象的toString方法，将返回值压入栈顶
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);
+
+			/*
+			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   [String, System.out]
+			   此时局部变量表中:
+			   [ 0        1             2                       3                 4          5                             6                         ]
+			   [this | Bundle | StackTraceElement数组 | StackTraceElement数组 | 数组长度 | 循环index | StackTraceElement数组中的某个值(以循环index作为下标)]
+			 */
+
+			//以String作为参数，执行(栈顶 - 1)对象System.out的println方法
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
 
-			//iinc: 将指定int型变量增加指定值
+			//iinc: 将指定int型变量增加指定值(index++)
 			mv.visitIincInsn(5, 1);
+			//跳转到labelLoop插入的位置
 			mv.visitJumpInsn(Opcodes.GOTO, labelLoop);
 
+			//插入结束Label，作为循环终止的跳转标志
 			mv.visitLabel(labelEnd);
 		}
 
