@@ -6,15 +6,15 @@ import org.objectweb.asm.Opcodes;
 
 class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 
-	private String mClassName;
-
-	private String mFormatClassName;
-
-	private String mMethodName;
-
-	private String mMethodDescriptor;
-
 	private final String TIMER_NAME = "_$_timeRecorder";
+
+	private final String mClassName;
+
+	private final String mFormatClassName;
+
+	private final String mMethodName;
+
+	private final String mMethodDescriptor;
 
 	AsmCalculatingTimeMethodVisitor(int api, MethodVisitor mv, String className, String methodName, String methodDescriptor) {
 		super(api, mv);
@@ -24,6 +24,12 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 		mMethodDescriptor = methodDescriptor;
 	}
 
+	/**
+	 * 以下代码会以栈的形式注释出来，以左边为栈顶，右边为栈底
+	 * 示例：[栈顶 <------------------> 栈底]
+	 * [this, StringBuilder, System.out]
+	 * 此时，this为栈顶，System.out为栈底
+	 */
 	@Override
 	public void visitCode() {
 
@@ -35,7 +41,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 		mv.visitVarInsn(Opcodes.ALOAD, 0);
 
 		/*
-			此时栈内容(以左边为栈顶，右边为栈顶):
+			此时栈内容:
 			[this]
 		*/
 
@@ -44,7 +50,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 		mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "currentTimeMillis", "()J", false);
 
 		/*
-			此时栈内容(以左边为栈顶，右边为栈顶):
+			此时栈内容:
 			[System.currentTimeMillis()的结果值, this]
 		*/
 
@@ -52,7 +58,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 		mv.visitInsn(Opcodes.LNEG);
 
 		/*
-			此时栈内容(以左边为栈顶，右边为栈顶):
+			此时栈内容:
 			[System.currentTimeMillis()的结果值取负, this]
 		*/
 
@@ -62,6 +68,12 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 		super.visitCode();
 	}
 
+	/**
+	 * 以下代码会以栈的形式注释出来，以左边为栈顶，右边为栈底
+	 * 示例：[栈顶 <------------------> 栈底]
+	 * [this, StringBuilder, System.out]
+	 * this为栈顶，System.out为栈底
+	 */
 	@Override
 	public void visitInsn(int opcode) {
 		if (opcode == Opcodes.RETURN) {
@@ -77,7 +89,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitInsn(Opcodes.DUP);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [this, this]
 			 */
 
@@ -86,7 +98,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitFieldInsn(Opcodes.GETFIELD, mClassName, TIMER_NAME, "J");
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [this._$_timeRecorder, this]
 			 */
 
@@ -94,7 +106,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/System", "currentTimeMillis", "()J", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [System.currentTimeMillis()执行后的结果值, this._$_timeRecorder, this]
 			 */
 
@@ -103,7 +115,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitInsn(Opcodes.LADD);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [System.currentTimeMillis() + this._$_timeRecorder, this]
 			 */
 
@@ -119,7 +131,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [System.out]
 			 */
 
@@ -130,7 +142,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitInsn(Opcodes.DUP);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StringBuilder, StringBuilder, System.out]
 			 */
 
@@ -138,7 +150,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StringBuilder, System.out]
 			 */
 
@@ -146,7 +158,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitLdcInsn("Time spent: ");
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   ["Time spent: ", StringBuilder, System.out]
 			 */
 
@@ -154,7 +166,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StringBuilder, System.out]
 			 */
 
@@ -162,7 +174,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitVarInsn(Opcodes.ALOAD, 0);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [this, StringBuilder, System.out]
 			 */
 
@@ -171,7 +183,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitFieldInsn(Opcodes.GETFIELD, mClassName, TIMER_NAME, "J");
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [this._$_timeRecorder, StringBuilder, System.out]
 			 */
 
@@ -179,7 +191,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(J)Ljava/lang/StringBuilder;", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StringBuilder, System.out]
 			 */
 
@@ -187,7 +199,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitLdcInsn("ms, when " + mFormatClassName + "." + mMethodName + ":" + mMethodDescriptor);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [字符串常量, StringBuilder, System.out]
 			 */
 
@@ -195,7 +207,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StringBuilder, System.out]
 			 */
 
@@ -203,7 +215,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [String, System.out]
 			 */
 
@@ -219,7 +231,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Thread", "currentThread", "()Ljava/lang/Thread;", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [Thread.currentThread()执行的结果]
 			 */
 
@@ -228,7 +240,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Thread", "getStackTrace", "()[Ljava/lang/StackTraceElement;", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StackTraceElement数组]
 			 */
 
@@ -239,7 +251,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitVarInsn(Opcodes.ALOAD, 2);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StackTraceElement数组]
 			   此时局部变量表中:
 			   [ 0        1             2           ]
@@ -251,7 +263,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitVarInsn(Opcodes.ALOAD, 3);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StackTraceElement数组]
 			   此时局部变量表中:
 			   [ 0        1             2                       3           ]
@@ -262,7 +274,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitInsn(Opcodes.ARRAYLENGTH);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StackTraceElement数组长度]
 			   此时局部变量表中:
 			   [ 0        1             2                       3           ]
@@ -301,7 +313,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitVarInsn(Opcodes.ILOAD, 4);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [循环标志位, 数组长度]
 			   此时局部变量表中:
 			   [ 0        1             2                       3                 4          5    ]
@@ -324,7 +336,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitVarInsn(Opcodes.ILOAD, 5);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [循环index, StackTraceElement数组]
 			   此时局部变量表中:
 			   [ 0        1             2                       3                 4          5    ]
@@ -335,7 +347,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitInsn(Opcodes.AALOAD);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StackTraceElement数组中的某个值(以循环index作为下标)]
 			   此时局部变量表中:
 			   [ 0        1             2                       3                 4          5    ]
@@ -356,7 +368,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [System.out]
 			   此时局部变量表中:
 			   [ 0        1             2                       3                 4          5                             6                         ]
@@ -369,7 +381,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StringBuilder, System.out]
 			   此时局部变量表中:
 			   [ 0        1             2                       3                 4          5                             6                         ]
@@ -380,7 +392,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitVarInsn(Opcodes.ALOAD, 6);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StackTraceElement数组中的某个值(以循环index作为下标), StringBuilder, System.out]
 			   此时局部变量表中:
 			   [ 0        1             2                       3                 4          5                             6                         ]
@@ -391,7 +403,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StackTraceElement", "getClassName", "()Ljava/lang/String;", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [ClassName, StringBuilder, System.out]
 			   此时局部变量表中:
 			   [ 0        1             2                       3                 4          5                             6                         ]
@@ -403,7 +415,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StringBuilder, System.out]
 			   此时局部变量表中:
 			   [ 0        1             2                       3                 4          5                             6                         ]
@@ -416,7 +428,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StringBuilder, System.out]
 			   此时局部变量表中:
 			   [ 0        1             2                       3                 4          5                             6                         ]
@@ -429,7 +441,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StackTraceElement", "getMethodName", "()Ljava/lang/String;", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [MethodName, StringBuilder, System.out]
 			   此时局部变量表中:
 			   [ 0        1             2                       3                 4          5                             6                         ]
@@ -440,7 +452,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StringBuilder, System.out]
 			   此时局部变量表中:
 			   [ 0        1             2                       3                 4          5                             6                         ]
@@ -453,7 +465,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StringBuilder, System.out]
 			   此时局部变量表中:
 			   [ 0        1             2                       3                 4          5                             6                         ]
@@ -466,7 +478,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StackTraceElement", "getLineNumber", "()I", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [LineNumber, StringBuilder, System.out]
 			   此时局部变量表中:
 			   [ 0        1             2                       3                 4          5                             6                         ]
@@ -477,7 +489,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(I)Ljava/lang/StringBuilder;", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [StringBuilder, System.out]
 			   此时局部变量表中:
 			   [ 0        1             2                       3                 4          5                             6                         ]
@@ -488,7 +500,7 @@ class AsmCalculatingTimeMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);
 
 			/*
-			   此时栈内容(以左边为栈顶，右边为栈顶):
+			   此时栈内容:
 			   [String, System.out]
 			   此时局部变量表中:
 			   [ 0        1             2                       3                 4          5                             6                         ]
